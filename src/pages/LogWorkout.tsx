@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { workoutsService } from '../services/workouts'
 
 type Set = {
   reps: string
@@ -11,9 +13,11 @@ type Exercise = {
 }
 
 function LogWorkout() {
+  const navigate = useNavigate()
   const [workoutType, setWorkoutType] = useState('')
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [exerciseName, setExerciseName] = useState('')
+  const [saving, setSaving] = useState(false)
 
   function addExercise() {
     if (!exerciseName.trim()) return
@@ -33,11 +37,42 @@ function LogWorkout() {
     setExercises(updated)
   }
 
+  async function finishWorkout() {
+    if (!workoutType) {
+      alert('Please select a workout type')
+      return
+    }
+    if (exercises.length === 0) {
+      alert('Add at least one exercise')
+      return
+    }
+
+    setSaving(true)
+    try {
+      await workoutsService.create({
+        type: workoutType,
+        exercises: exercises.map(ex => ({
+          name: ex.name,
+          sets: ex.sets
+            .filter(s => s.reps && s.weight)
+            .map(s => ({
+              reps: parseInt(s.reps),
+              weight: parseFloat(s.weight),
+            })),
+        })),
+      })
+      navigate('/history')
+    } catch (err) {
+      console.error(err)
+      alert('Failed to save workout')
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="p-4 pb-24">
       <h1 className="text-2xl font-bold text-white mb-4">Log Workout</h1>
 
-      {/* Workout Type */}
       <div className="flex gap-2 mb-6">
         {['Push', 'Pull', 'Legs'].map(type => (
           <button
@@ -54,7 +89,6 @@ function LogWorkout() {
         ))}
       </div>
 
-      {/* Add Exercise */}
       <div className="flex gap-2 mb-6">
         <input
           type="text"
@@ -71,20 +105,17 @@ function LogWorkout() {
         </button>
       </div>
 
-      {/* Exercise List */}
       <div className="flex flex-col gap-4">
         {exercises.map((exercise, eIndex) => (
           <div key={eIndex} className="bg-zinc-800 rounded-2xl p-4">
             <p className="text-white font-semibold mb-3">{exercise.name}</p>
 
-            {/* Set Headers */}
             <div className="flex gap-2 mb-2 px-1">
               <p className="text-zinc-500 text-xs w-8">SET</p>
               <p className="text-zinc-500 text-xs flex-1">REPS</p>
               <p className="text-zinc-500 text-xs flex-1">WEIGHT (kg)</p>
             </div>
 
-            {/* Sets */}
             {exercise.sets.map((set, sIndex) => (
               <div key={sIndex} className="flex gap-2 mb-2 items-center">
                 <p className="text-zinc-500 text-sm w-8">{sIndex + 1}</p>
@@ -105,7 +136,6 @@ function LogWorkout() {
               </div>
             ))}
 
-            {/* Add Set Button */}
             <button
               onClick={() => addSet(eIndex)}
               className="mt-2 text-blue-400 text-sm font-semibold"
@@ -116,10 +146,13 @@ function LogWorkout() {
         ))}
       </div>
 
-      {/* Finish Workout */}
       {exercises.length > 0 && (
-        <button className="w-full mt-6 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl">
-          Finish Workout
+        <button
+          onClick={finishWorkout}
+          disabled={saving}
+          className="w-full mt-6 bg-green-500 hover:bg-green-600 disabled:bg-zinc-700 text-white font-semibold py-3 rounded-xl"
+        >
+          {saving ? 'Saving...' : 'Finish Workout'}
         </button>
       )}
     </div>

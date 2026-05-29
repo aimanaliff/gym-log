@@ -1,21 +1,29 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-
-const recentWorkouts = [
-  { id: 1, type: 'Push', date: 'Mon, 5 May', exercises: 5 },
-  { id: 2, type: 'Pull', date: 'Tue, 6 May', exercises: 4 },
-  { id: 3, type: 'Legs', date: 'Wed, 7 May', exercises: 6 },
-]
+import { workoutsService, type Workout } from '../services/workouts'
 
 function Dashboard() {
   const navigate = useNavigate()
+  const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    workoutsService.getAll()
+      .then(data => {
+        setRecentWorkouts(data.slice(0, 3))
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error(err)
+        setLoading(false)
+      })
+  }, [])
 
   return (
     <div className="p-4 pb-24">
-      {/* Header */}
       <h1 className="text-2xl font-bold text-white mb-1">Hey, Aliff 👋</h1>
       <p className="text-zinc-400 text-sm mb-6">Ready to train today?</p>
 
-      {/* Today's Plan */}
       <div className="bg-zinc-800 rounded-2xl p-4 mb-6">
         <p className="text-zinc-400 text-xs uppercase tracking-widest mb-1">Today's Plan</p>
         <p className="text-white text-xl font-bold mb-3">Push Day 💪</p>
@@ -27,19 +35,30 @@ function Dashboard() {
         </button>
       </div>
 
-      {/* Recent Workouts */}
       <p className="text-zinc-400 text-xs uppercase tracking-widest mb-3">Recent Workouts</p>
-      <div className="flex flex-col gap-3">
-        {recentWorkouts.map(workout => (
-          <div key={workout.id} className="bg-zinc-800 rounded-2xl p-4 flex justify-between items-center">
-            <div>
-              <p className="text-white font-semibold">{workout.type} Day</p>
-              <p className="text-zinc-400 text-sm">{workout.date}</p>
+      {loading ? (
+        <p className="text-zinc-400 text-sm">Loading...</p>
+      ) : recentWorkouts.length === 0 ? (
+        <p className="text-zinc-400 text-sm">No workouts yet. Start your first one!</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {recentWorkouts.map(workout => (
+            <div key={workout.id} className="bg-zinc-800 rounded-2xl p-4 flex justify-between items-center">
+              <div>
+                <p className="text-white font-semibold">{workout.type} Day</p>
+                <p className="text-zinc-400 text-sm">
+                  {new Date(workout.date).toLocaleDateString('en-GB', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                  })}
+                </p>
+              </div>
+              <p className="text-zinc-400 text-sm">{workout.exercises.length} exercises</p>
             </div>
-            <p className="text-zinc-400 text-sm">{workout.exercises} exercises</p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
