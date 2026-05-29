@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { workoutsService, type Workout } from '../services/workouts'
+import { authService } from '../services/auth'
 
 function Dashboard() {
   const navigate = useNavigate()
@@ -19,10 +20,25 @@ function Dashboard() {
       })
   }, [])
 
+  function handleLogout() {
+    authService.logout()
+    navigate('/login')
+  }
+
   return (
     <div className="p-4 pb-24">
-      <h1 className="text-2xl font-bold text-white mb-1">Hey, Aliff 👋</h1>
-      <p className="text-zinc-400 text-sm mb-6">Ready to train today?</p>
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white mb-1">Hey, Aliff 👋</h1>
+          <p className="text-zinc-400 text-sm">Ready to train today?</p>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="text-zinc-400 text-sm hover:text-white"
+        >
+          Logout
+        </button>
+      </div>
 
       <div className="bg-zinc-800 rounded-2xl p-4 mb-6">
         <p className="text-zinc-400 text-xs uppercase tracking-widest mb-1">Today's Plan</p>
